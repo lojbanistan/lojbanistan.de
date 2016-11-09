@@ -1,0 +1,71 @@
+/* Palette
+ *
+ * „Lojban Orange“
+ * #CF8B54
+ *
+ * „Lojbanistan Rot“
+ * #9E2528
+ *
+ */
+
+
+html {
+    position: relative;
+    min-height: 100%;
+}
+
+body {
+    min-height: 100%;
+    /* oranger Streifen oben */
+    background-color: #CF8B54;
+    /* margin: 0 auto 1em; */
+    padding-top: 5px;
+    /* for footer */
+    padding-bottom: 30px;
+}
+
+.wrapper {
+    background-color: #fff;
+    overflow: auto;
+    border-radius: 0 0 4px 4px;
+    padding-bottom: 5em;
+}
+
+.wrapper > header {
+    margin-top: 3em;
+    margin-bottom: 3em;
+    font-family: sans;
+    text-align: center;
+}
+
+.wrapper > header h1 {
+    color: #555;
+    font-size: 3em;
+    font-weight: 600;
+}
+
+.wrapper > main {
+    width: 30%;
+    margin: 0 auto;
+}
+
+
+/* Link zur Quelle */
+body > footer {
+    text-align: center;
+    margin-top: 1.5em;
+}
+body > footer a {
+    font-size: 1em;
+    font-weight: 400;
+    padding: 1em 1em;
+    border-radius: 4px;
+
+    color: white;
+    background-color: #9E2528;
+    text-decoration: none;
+}
+body > footer a:hover {
+    background-color: #9F5B25;
+}
+
