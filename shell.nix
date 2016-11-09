@@ -1,0 +1,1 @@
+(import ./.).lojbanistan-de.env
