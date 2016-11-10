@@ -1,7 +1,9 @@
 {-# LANGUAGE OverloadedStrings, NoImplicitPrelude #-}
 module Main where
 
-import Protolude
+-- Wegen Protolude#17 (https://github.com/sdiehl/protolude/issues/17) müssen wir Data.Monoid.(<>) importieren
+import Data.Monoid ((<>))
+import Protolude hiding ((<>))
 import qualified System.FilePath.Posix as FP
 
 import Hakyll
@@ -24,12 +26,19 @@ main = hakyll $ do
   -- Das Layout ist /artikel/<id>.html
   match "artikel/*" $ do
     route $ setExtension "html"
-    compile $ pandocCompiler >>= relativizeUrls
+    compile $ pandocCompiler
+          >>= loadAndApplyTemplate (fromFilePath "templates/default.html") defaultContext
+          >>= relativizeUrls
 
   -- Liste an Artikeln
   match "templates/index.html" $ do
     route $ constRoute "index.html"
     compile $ do
-      let ctx = listField "artikel" defaultContext (loadAll "artikel/*")
-      getResourceString >>= applyAsTemplate ctx
+      let ctx = listField "artikel" defaultContext (loadAll "artikel/*") <> defaultContext 
+      getResourceString
+        >>= applyAsTemplate ctx
+        >>= loadAndApplyTemplate (fromFilePath "templates/default.html") ctx
+        >>= relativizeUrls
 
+  match "templates/*" $
+    compile templateCompiler
