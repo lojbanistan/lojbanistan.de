@@ -73,11 +73,24 @@ highlightLojbanSyntax :: Item P.String -> Compiler (Item P.String)
 highlightLojbanSyntax = withItemBody highlight
   where highlight :: P.String -> Compiler P.String
         highlight str =
-          let xs = groupBy (\x y -> trim x == "{lojban}" || trim y == "{/lojban}") (lines str)
-              highlight' = sequence . map (map unwords . sequence . map highlightWord . words)
-              f xs = if head xs == Just "{lojban}" then map (\x -> ["<code>"] ++ x ++ ["</code>"]) (highlight' (init (drop 1 xs))) else pure xs
-           in unlines . join <$> sequence (map f xs)
+          let highlight' [] = []
+              highlight' (x:xs) = if x == "{/lojban}" then parse xs else highlightWord x : highlight' xs
+              parse [] = []
+              parse (x:xs) = if x == "{lojban}" then highlight' xs else pure x : parse xs
+           in join <$> sequence (parse $ tokenize str)
         highlightWord :: P.String -> Compiler P.String
         highlightWord w
           | length w == 5 = pure ("<span class=\"gismu\">" ++ w ++ "</span>")
           | otherwise = pure w
+        tokenize :: P.String -> [P.String]
+        tokenize str = let token = ['\n','<','>','\r',' ','\t'] in
+          case str of
+            [] -> []
+            [x] -> [[x]]
+            (x:y:xs) -> let isToken z = isJust (find (\c -> z == c) token) in
+                          case (isToken x, isToken y) of
+                            (_, True) -> [[x]] ++ [[y]] ++ tokenize xs
+                            (True, False) -> [x] : tokenize (y:xs)
+                            (False, False) -> case tokenize (y:xs) of
+                                                (a:as) -> (x:a):as
+                                                _      -> [[x]]
