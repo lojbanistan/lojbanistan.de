@@ -30,7 +30,12 @@
       <main>
         $if(aufbauendAuf)$
         <p>
-          Dieser Artikel baut auf den/die Artikel $aufbauendAuf$ auf.
+          Dieser Artikel baut auf folgenden Artikeln auf:
+          <ul>
+          $for(aufbauendAuf)$
+            <li><a href="$url$">$title$</a></li>
+          $endfor$
+          </ul>
         </p>
         $endif$
         $body$

@@ -4,6 +4,7 @@ module Main where
 -- Wegen Protolude#17 (https://github.com/sdiehl/protolude/issues/17) müssen wir Data.Monoid.(<>) importieren
 import Data.Monoid ((<>))
 import Protolude hiding ((<>))
+import qualified Prelude as P
 import qualified System.FilePath.Posix as FP
 
 import Hakyll
@@ -26,8 +27,9 @@ main = hakyll $ do
   -- Das Layout ist /artikel/<id>.html
   match "artikel/*" $ do
     route $ setExtension "html"
+    let ctx = articleDependenciesContext <> defaultContext
     compile $ pandocCompiler
-          >>= loadAndApplyTemplate (fromFilePath "templates/default.html") defaultContext
+          >>= loadAndApplyTemplate (fromFilePath "templates/default.html") ctx
           >>= relativizeUrls
 
   -- Liste an Artikeln
@@ -42,3 +44,17 @@ main = hakyll $ do
 
   match "templates/*" $
     compile templateCompiler
+
+-- Ein Kontext der das `aufbauendAuf` Feld eines Artikels ausliest
+-- und danach alle Metadaten zu diesen gelisteten Artikeln ausliest
+-- und in der aufbauendAuf template Variable speichert.
+--
+-- Das aufbauendAuf Feld im Artikel kann in einer YAML-artigen Syntax definiert werden.
+-- TODO: Erlaube mehr Extensions als .md
+articleDependenciesContext :: Context a
+articleDependenciesContext = listField "aufbauendAuf" defaultContext $ do
+  identifier <- getUnderlying
+  metadata <- getMetadata identifier
+  case lookupStringList "aufbauendAuf" metadata of
+    Nothing -> return []
+    Just xs -> traverse load $ map (\x -> fromFilePath ("artikel/" ++ x ++ ".md")) xs
