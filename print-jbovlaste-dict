@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# print dictionary xml for given language
+# env USER: username
+# env PASS: password
+# $1: language
+
+LANG="$1"
+TMPDIR=$(mktemp -d)
+COOKIES="$TMPDIR/cookies"
+
+# login
+curl --cookie-jar "$COOKIES" -F "username=$USER" -F "password=$PASS" \
+    "http://jbovlaste.lojban.org/login.html" \
+    |  grep -i "you are logged in as:" >/dev/null
+if [[ $? -ne 0 ]]; then
+    echo "login failed :(" >&2
+    exit 1
+fi
+
+# get dict
+curl --cookie "$COOKIES" \
+    "http://jbovlaste.lojban.org/export/xml-export.html?lang=$LANG"
