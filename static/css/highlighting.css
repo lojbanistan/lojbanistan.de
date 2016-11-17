@@ -29,6 +29,27 @@ span > span.translation {
   right: 50%; /* Platziere die rechte Ecke der Box genau mittig über dem Wort */
   transform: translate(50%, 0); /* Schiebe die Box um 50% ihrer Breite nach rechts */
 }
+/* Erzeuge unterhalb der Box einen kleinen Pfeil
+ * der auf das Wort zeigt, welches gehovert wird */
+span.translation:after {
+  content: '';
+  position: absolute;
+  background: #444;
+  /* Erzeuge eine 10x10 Box, deren Mitte
+   * an der unteren Kante der Box zentriert ist */
+  left: 50%;
+  bottom: -5px;
+  width: 10px;
+  height: 10px;
+  margin-left: -5px;
+  /* Gib der Box unten und rechts einen Rahmen */
+  border-bottom: 1px solid #000;
+  border-right: 1px solid #000;
+  /* Die Box ist um 45 Grad gedreht,
+   * sodass die ein Pfeil nach unten durch den Rahmen entsteht */
+  transform: rotate(45deg);
+}
+
 span {
   display: inline-block;
   position: relative;
