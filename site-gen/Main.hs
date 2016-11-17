@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings, NoImplicitPrelude #-}
 module Main where
 
+import Data.Char (isSpace)
 import Data.List (words, unwords, lines, unlines, init, groupBy)
 -- Wegen Protolude#17 (https://github.com/sdiehl/protolude/issues/17) müssen wir Data.Monoid.(<>) importieren
 import Data.Monoid ((<>))
@@ -9,6 +10,7 @@ import qualified Prelude as P
 import qualified System.FilePath.Posix as FP
 
 import Hakyll
+import LojbanHighlighting
 
 main :: IO ()
 main = hakyll $ do
@@ -59,40 +61,3 @@ articleDependenciesContext = listField "aufbauendAuf" defaultContext $ do
   case lookupStringList "aufbauendAuf" metadata of
     Nothing -> return []
     Just xs -> traverse load $ map (\x -> fromFilePath ("artikel/" ++ x ++ ".md")) xs
-
--- Wie `lojbanCompiler`, aber mit Pandoc.
-lojbanPandocCompiler :: Compiler (Item P.String)
-lojbanPandocCompiler = renderPandoc =<< lojbanCompiler
-
--- Dieser Compiler lichtet die Syntax von Lojbanblöcken hoch.
--- Ein Lojbanblock beginnt mit {lojban} oder mit {jbo} und endet mit {/lojban} oder {/jbo}.
-lojbanCompiler :: Compiler (Item P.String)
-lojbanCompiler = highlightLojbanSyntax =<< getResourceBody
-
-highlightLojbanSyntax :: Item P.String -> Compiler (Item P.String)
-highlightLojbanSyntax = withItemBody highlight
-  where highlight :: P.String -> Compiler P.String
-        highlight str =
-          let terminators = [ "{/lojban}", "{/jbo}" ]
-              initiators  = [ "{lojban}", "{jbo}" ]
-              highlight' [] = []
-              highlight' (x:xs) = if x `elem` terminators then parse xs else highlightWord x : highlight' xs
-              parse [] = []
-              parse (x:xs) = if x `elem` initiators then highlight' xs else pure x : parse xs
-           in join <$> sequence (parse $ tokenize str)
-        highlightWord :: P.String -> Compiler P.String
-        highlightWord w
-          | length w == 5 = pure ("<span class=\"gismu\">" ++ w ++ "<span class=\"translation\">x1 ist ein test x2</span></span>")
-          | otherwise = pure w
-        tokenize :: P.String -> [P.String]
-        tokenize str = let token = ['\n','<','>','\r',' ','\t'] in
-          case str of
-            [] -> []
-            [x] -> [[x]]
-            (x:y:xs) -> let isToken z = isJust (find (\c -> z == c) token) in
-                          case (isToken x, isToken y) of
-                            (_, True) -> [[x]] ++ [[y]] ++ tokenize xs
-                            (True, False) -> [x] : tokenize (y:xs)
-                            (False, False) -> case tokenize (y:xs) of
-                                                (a:as) -> (x:a):as
-                                                _      -> [[x]]

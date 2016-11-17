@@ -24,5 +24,6 @@ executable lojbanistan-de
                      , protolude
                      , filepath
                      , hakyll >= 4.9
+                     , tagsoup
   hs-source-dirs:      site-gen
   default-language:    Haskell2010
