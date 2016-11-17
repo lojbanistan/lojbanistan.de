@@ -9,17 +9,25 @@ span > span.translation {
   display: none;
   position: absolute;
   text-align: center;
-  /* FIXME: Die breite ist zur Zeit Konstant angegeben.
-   * Wenn man die Breite nicht angibt, ist das hover fenster nur
-   * so breit wie das Wort, welches es beschreiben soll.
-   */
-  width: 250px;
+
+  /* Sorge dafür, dass die Breite von der Hoverbox
+   * der Breite des Texts entspricht */
+  white-space: nowrap;
+  
   min-height: 1.5em;
-  top: -1.5em;
-  left: -100px;
-  margin: 0 auto;
+  top: -2em;
+  padding: 4px;
   color: #fff;
   background: #444;
+  border: 1px solid #000;
+  border-radius: 5px 5px 5px 5px;
+
+  /* Diese Zeilen zentrieren die Box mittig über dem Wort.
+   * Schaut euch an, wie kaputt CSS nur ist... 
+   * right und left bewegen die Box um die relative breite vom Text.
+   * transform: translate() hingegen bewegt die Box relativ zu ihrer Größe. */
+  right: 50%; /* Platziere die rechte Ecke der Box genau mittig über dem Wort */
+  transform: translate(50%, 0); /* Schiebe die Box um 50% ihrer Breite nach rechts */
 }
 span {
   display: inline-block;
