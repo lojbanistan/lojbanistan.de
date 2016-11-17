@@ -27,3 +27,4 @@ executable lojbanistan-de
                      , tagsoup
   hs-source-dirs:      site-gen
   default-language:    Haskell2010
+  ghc-options:         -Wall

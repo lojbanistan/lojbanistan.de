@@ -1,12 +1,9 @@
 {-# LANGUAGE OverloadedStrings, NoImplicitPrelude #-}
 module Main where
 
-import Data.Char (isSpace)
-import Data.List (words, unwords, lines, unlines, init, groupBy)
 -- Wegen Protolude#17 (https://github.com/sdiehl/protolude/issues/17) müssen wir Data.Monoid.(<>) importieren
 import Data.Monoid ((<>))
 import Protolude hiding ((<>))
-import qualified Prelude as P
 import qualified System.FilePath.Posix as FP
 
 import Hakyll
