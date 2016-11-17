@@ -65,7 +65,7 @@ lojbanPandocCompiler :: Compiler (Item P.String)
 lojbanPandocCompiler = renderPandoc =<< lojbanCompiler
 
 -- Dieser Compiler lichtet die Syntax von Lojbanblöcken hoch.
--- Ein Lojbanblock beginnt mit {lojban} und endet mit {/lojban}.
+-- Ein Lojbanblock beginnt mit {lojban} oder mit {jbo} und endet mit {/lojban} oder {/jbo}.
 lojbanCompiler :: Compiler (Item P.String)
 lojbanCompiler = highlightLojbanSyntax =<< getResourceBody
 
@@ -82,7 +82,7 @@ highlightLojbanSyntax = withItemBody highlight
            in join <$> sequence (parse $ tokenize str)
         highlightWord :: P.String -> Compiler P.String
         highlightWord w
-          | length w == 5 = pure ("<span class=\"gismu\">" ++ w ++ "</span>")
+          | length w == 5 = pure ("<span class=\"gismu\">" ++ w ++ "<span class=\"translation\">x1 ist ein test x2</span></span>")
           | otherwise = pure w
         tokenize :: P.String -> [P.String]
         tokenize str = let token = ['\n','<','>','\r',' ','\t'] in

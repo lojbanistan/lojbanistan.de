@@ -1,0 +1,27 @@
+/* Das CSS fürs Lojban Highlighting und zum Anzeigen von Übersetzungen */
+
+/* Zeige Übersetzungen beim Hovern an */
+span:hover > span.translation {
+  display: block;
+}
+/* Das Design vom Übersetzungsfenster */
+span > span.translation {
+  display: none;
+  position: absolute;
+  text-align: center;
+  /* FIXME: Die breite ist zur Zeit Konstant angegeben.
+   * Wenn man die Breite nicht angibt, ist das hover fenster nur
+   * so breit wie das Wort, welches es beschreiben soll.
+   */
+  width: 250px;
+  min-height: 1.5em;
+  top: -1.5em;
+  left: -100px;
+  margin: 0 auto;
+  color: #fff;
+  background: #444;
+}
+span {
+  display: inline-block;
+  position: relative;
+}
