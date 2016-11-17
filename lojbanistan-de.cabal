@@ -3,12 +3,12 @@
 
 name:                lojbanistan-de
 version:             0.1.0.0
-synopsis:            Sitegenerator von lojbanistan.de
+synopsis:            Seitengenerator von lojbanistan.de
 -- description:         
 homepage:            lojbanistan.de
 license:             GPL-3
-license-file:        site-gen/LICENSE
-author:              Profpatsch
+license-file:        license/LICENSE-site-gen.txt
+author:              Profpatsch <mail@profpatsch.de>, uwap <me@uwap.name>
 maintainer:          mail@profpatsch.de
 -- copyright:           
 category:            Web
