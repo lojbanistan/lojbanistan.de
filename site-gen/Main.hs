@@ -73,10 +73,12 @@ highlightLojbanSyntax :: Item P.String -> Compiler (Item P.String)
 highlightLojbanSyntax = withItemBody highlight
   where highlight :: P.String -> Compiler P.String
         highlight str =
-          let highlight' [] = []
-              highlight' (x:xs) = if x == "{/lojban}" then parse xs else highlightWord x : highlight' xs
+          let terminators = [ "{/lojban}", "{/jbo}" ]
+              initiators  = [ "{lojban}", "{jbo}" ]
+              highlight' [] = []
+              highlight' (x:xs) = if x `elem` terminators then parse xs else highlightWord x : highlight' xs
               parse [] = []
-              parse (x:xs) = if x == "{lojban}" then highlight' xs else pure x : parse xs
+              parse (x:xs) = if x `elem` initiators then highlight' xs else pure x : parse xs
            in join <$> sequence (parse $ tokenize str)
         highlightWord :: P.String -> Compiler P.String
         highlightWord w
