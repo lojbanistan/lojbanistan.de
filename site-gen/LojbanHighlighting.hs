@@ -1,4 +1,5 @@
-{-# LANGUAGE OverloadedStrings, NoImplicitPrelude, ViewPatterns, FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings, NoImplicitPrelude,
+    ViewPatterns, FlexibleContexts, ScopedTypeVariables #-}
 module LojbanHighlighting where
 
 import Protolude
@@ -7,28 +8,31 @@ import Data.Char (isSpace)
 import Text.HTML.TagSoup
 
 lookupTranslation :: (StringConv a Text, StringConv Text b) => a -> IO b
-lookupTranslation x = do
+lookupTranslation (toS -> x) = do
     tags <- parseTags <$> readFile "jbovlaste.xml"
-    return . toS $ findDefinition (toS x) tags
+    let result = findDefinition x tags
+    let errorMessage :: Text = "Keine Definition gefunden"
+    when (isNothing result) $ putStrLn ("[Warnung] Keine Definition für " ++ toS x ++ " gefunden")
+    return $ maybe (toS errorMessage) toS result
   where
-    findDefinition :: Text -> [Tag Text] -> Text
+    findDefinition :: Text -> [Tag Text] -> Maybe Text
     findDefinition w (TagOpen "valsi" attrs : xs)
       | ("word", w) `elem` attrs = findDefinition' w xs
       | otherwise = findDefinition w xs
     findDefinition w (_ : xs) = findDefinition w xs
-    findDefinition w [] = "Keine Definition gefunden"
+    findDefinition _ [] = Nothing
 
-    findDefinition' :: Text -> [Tag Text] -> Text
-    findDefinition' w (TagClose "valsi" : _) = "Keine Definition gefunden"
-    findDefinition' w (TagOpen "definition" _ : TagText def : _) = def
+    findDefinition' :: Text -> [Tag Text] -> Maybe Text
+    findDefinition' _ (TagClose "valsi" : _) = Nothing
+    findDefinition' _ (TagOpen "definition" _ : TagText def : _) = Just def
     findDefinition' w (_ : xs) = findDefinition' w xs
-    findDefinition' w [] = "Keine Definition gefunden"
+    findDefinition' _ [] = Nothing
 
 highlightWord :: (StringConv a [Char], StringConv [Char] b) => a -> IO b
 highlightWord (toS -> w) | all isSpace w = return $ toS w
                          | otherwise = toS <$> highlight w
-                      where highlight w = (\x -> return ("<span>" ++ w ++ "<span class=\"translation\">" ++ x ++ "</span></span>"))
-                                              =<< lookupTranslation w
+                      where highlight v = (\x -> return ("<span>" ++ v ++ "<span class=\"translation\">" ++ x ++ "</span></span>"))
+                                              =<< lookupTranslation v
 
 highlightLojbanBlocks :: (StringConv a [Char], StringConv [Char] b) => a -> IO b
 highlightLojbanBlocks (toS -> s) = toS . join <$> parse (tokenize s)
@@ -44,7 +48,7 @@ highlightLojbanBlocks (toS -> s) = toS . join <$> parse (tokenize s)
     highlight [] = return []
 
     tokenize :: [Char] -> [[Char]]
-    tokenize str = let token = ['\n','<','>','\r',' ','\t'] in
+    tokenize str = let token = ['\n','<','>','\r',' ','\t', '.', ','] in
       case str of
         [] -> []
         [x] -> [[x]]
