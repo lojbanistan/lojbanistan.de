@@ -6,16 +6,13 @@ import Protolude
 import Hakyll
 import Data.Char (isSpace)
 import qualified Data.Text as T
+import qualified Data.Set as S
 import Text.HTML.TagSoup
 
--- TODO get out of IO
-lookupTranslation :: [Tag Text] -> Text -> IO Text
-lookupTranslation tags x = do
-    case findDefinition x tags of
-      Just res -> return res
-      Nothing  -> do
-        putStrLn ("[Warnung] Keine Definition für " <> x <> " gefunden")
-        return "Keine Definition gefunden"
+lookupTranslation :: [Tag Text] -> Text -> (S.Set Text, Text)
+lookupTranslation tags x = case findDefinition x tags of
+    Just res -> (S.empty, res)
+    Nothing  -> (S.singleton x, "Keine Definition gefunden")
   where
     findDefinition :: Text -> [Tag Text] -> Maybe Text
     findDefinition w (TagOpen "valsi" attrs : xs)
@@ -30,30 +27,30 @@ lookupTranslation tags x = do
     findDefinition' w (_ : xs) = findDefinition' w xs
     findDefinition' _ [] = Nothing
 
--- TODO get out of IO, move the tags somewhere else
-highlightWord :: [Tag Text] -> Text -> IO Text
+highlightWord :: [Tag Text] -> Text -> (S.Set Text, Text)
 highlightWord tags w
-    | T.all isSpace w = return $ w
+    | T.all isSpace w = (S.empty, w)
     | otherwise = highlight w
-        where highlight v = (\x -> return ("<span>" <> v <> "<span class=\"translation\">" <> x <> "</span></span>"))
-                                =<< lookupTranslation tags v
+        where highlight v = (\x -> "<span>" <> v <> "<span class=\"translation\">" <> x <> "</span></span>")
+                                <$> lookupTranslation tags v
 
--- TODO get out of IO, move the tags somewhere else
 highlightLojbanBlocks :: [Tag Text] -> Text -> IO Text
-highlightLojbanBlocks tags s =
-  -- Warum T.concat und parse :: [Text] -> [Text], wenn man es eh zusammenschmeißt?
-  T.concat <$> parse (asStr tokenize s)
+highlightLojbanBlocks tags s = do
+    let (set, result) = T.concat <$> parse (asStr tokenize s)
+    traverse_ putStrLn $ (\x -> "[Warnung] Keine Definition für " <> x <> " gefunden") <$> S.elems set
+    return result
   where
     asStr :: ([Char] -> [[Char]]) -> Text -> [Text]
     asStr f a = toS <$> f (toS a)
-    parse :: [Text] -> IO [Text]
+
+    parse :: [Text] -> (S.Set Text, [Text])
     parse (x : xs) | x `elem` [ "{jbo}", "{lojban}" ] = highlight xs
-                   | otherwise = return . (x :) =<< parse xs
+                   | otherwise = (x :) <$> parse xs
     parse [] = return []
 
-    highlight :: [Text] -> IO [Text]
+    highlight :: [Text] -> (S.Set Text, [Text])
     highlight (x : xs) | x `elem` [ "{/jbo}", "{/lojban}" ] = parse xs
-                       | otherwise = liftA2 (:) (highlightWord tags x) (highlight xs)
+                       | otherwise = let (y,z) = highlight xs in bimap (S.union y) (: z) (highlightWord tags x)
     highlight [] = return []
 
     -- keine schöne Lösung, hm
@@ -81,6 +78,7 @@ lojbanCompiler f = do
     tags <- parseTags <$> readFile f
     highlightLojbanBlocks tags $ toS ib)
 
--- Wie `lojbanCompiler`, aber mit Pandoc.
+-- Wie `lojbanCompiler`, aber mit Pandoc. Der lojbanPandocCompiler sollte immer
+-- bevorzugt werden, da jbovlaste im export LaTeX benutzt für die $x_n$ place structures.
 lojbanPandocCompiler :: FilePath -> Compiler (Item [Char])
 lojbanPandocCompiler f = renderPandoc . (fmap toS) =<< lojbanCompiler f
