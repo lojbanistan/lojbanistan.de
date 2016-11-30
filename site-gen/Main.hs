@@ -28,7 +28,7 @@ main = hakyll $ do
   match "artikel/*" $ do
     route $ setExtension "html"
     let ctx = articleDependenciesContext <> defaultContext
-    compile $ lojbanPandocCompiler
+    compile $ lojbanPandocCompiler "jbovlaste.xml"
           >>= loadAndApplyTemplate (fromFilePath "templates/default.html") ctx
           >>= relativizeUrls
 

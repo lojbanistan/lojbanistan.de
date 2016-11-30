@@ -25,6 +25,7 @@ executable lojbanistan-de
                      , filepath
                      , hakyll >= 4.9
                      , tagsoup
+                     , text
   hs-source-dirs:      site-gen
   default-language:    Haskell2010
   ghc-options:         -Wall

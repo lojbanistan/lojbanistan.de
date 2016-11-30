@@ -5,15 +5,17 @@ module LojbanHighlighting where
 import Protolude
 import Hakyll
 import Data.Char (isSpace)
+import qualified Data.Text as T
 import Text.HTML.TagSoup
 
-lookupTranslation :: (StringConv a Text, StringConv Text b) => a -> IO b
-lookupTranslation (toS -> x) = do
-    tags <- parseTags <$> readFile "jbovlaste.xml"
-    let result = findDefinition x tags
-    let errorMessage :: Text = "Keine Definition gefunden"
-    when (isNothing result) $ putStrLn ("[Warnung] Keine Definition für " ++ toS x ++ " gefunden")
-    return $ maybe (toS errorMessage) toS result
+-- TODO get out of IO
+lookupTranslation :: [Tag Text] -> Text -> IO Text
+lookupTranslation tags x = do
+    case findDefinition x tags of
+      Just res -> return res
+      Nothing  -> do
+        putStrLn ("[Warnung] Keine Definition für " <> x <> " gefunden")
+        return "Keine Definition gefunden"
   where
     findDefinition :: Text -> [Tag Text] -> Maybe Text
     findDefinition w (TagOpen "valsi" attrs : xs)
@@ -28,25 +30,33 @@ lookupTranslation (toS -> x) = do
     findDefinition' w (_ : xs) = findDefinition' w xs
     findDefinition' _ [] = Nothing
 
-highlightWord :: (StringConv a [Char], StringConv [Char] b) => a -> IO b
-highlightWord (toS -> w) | all isSpace w = return $ toS w
-                         | otherwise = toS <$> highlight w
-                      where highlight v = (\x -> return ("<span>" ++ v ++ "<span class=\"translation\">" ++ x ++ "</span></span>"))
-                                              =<< lookupTranslation v
+-- TODO get out of IO, move the tags somewhere else
+highlightWord :: [Tag Text] -> Text -> IO Text
+highlightWord tags w
+    | T.all isSpace w = return $ w
+    | otherwise = highlight w
+        where highlight v = (\x -> return ("<span>" <> v <> "<span class=\"translation\">" <> x <> "</span></span>"))
+                                =<< lookupTranslation tags v
 
-highlightLojbanBlocks :: (StringConv a [Char], StringConv [Char] b) => a -> IO b
-highlightLojbanBlocks (toS -> s) = toS . join <$> parse (tokenize s)
+-- TODO get out of IO, move the tags somewhere else
+highlightLojbanBlocks :: [Tag Text] -> Text -> IO Text
+highlightLojbanBlocks tags s =
+  -- Warum T.concat und parse :: [Text] -> [Text], wenn man es eh zusammenschmeißt?
+  T.concat <$> parse (asStr tokenize s)
   where
-    parse :: [[Char]] -> IO [[Char]]
+    asStr :: ([Char] -> [[Char]]) -> Text -> [Text]
+    asStr f a = toS <$> f (toS a)
+    parse :: [Text] -> IO [Text]
     parse (x : xs) | x `elem` [ "{jbo}", "{lojban}" ] = highlight xs
                    | otherwise = return . (x :) =<< parse xs
     parse [] = return []
 
-    highlight :: [[Char]] -> IO [[Char]]
+    highlight :: [Text] -> IO [Text]
     highlight (x : xs) | x `elem` [ "{/jbo}", "{/lojban}" ] = parse xs
-                       | otherwise = liftA2 (:) (highlightWord x) (highlight xs)
+                       | otherwise = liftA2 (:) (highlightWord tags x) (highlight xs)
     highlight [] = return []
 
+    -- keine schöne Lösung, hm
     tokenize :: [Char] -> [[Char]]
     tokenize str = let token = ['\n','<','>','\r',' ','\t', '.', ','] in
       case str of
@@ -60,11 +70,17 @@ highlightLojbanBlocks (toS -> s) = toS . join <$> parse (tokenize s)
                                             (a:as) -> (x:a):as
                                             _      -> [[x]]
 
--- Dieser Compiler lichtet die Syntax von Lojbanblöcken hoch.
+-- | Dieser Compiler lichtet die Syntax von Lojbanblöcken hoch.
 -- Ein Lojbanblock beginnt mit {lojban} oder mit {jbo} und endet mit {/lojban} oder {/jbo}.
-lojbanCompiler :: Compiler (Item [Char])
-lojbanCompiler = getResourceBody >>= withItemBody (unsafeCompiler . highlightLojbanBlocks)
+lojbanCompiler :: FilePath
+               -- ^ Dateiname der Jbovlaste XML
+               -> Compiler (Item Text)
+lojbanCompiler f = do
+  getResourceBody >>= withItemBody (\ib -> unsafeCompiler $ do
+    -- unsafeCompiler ok? Vllt. etwas netteres?
+    tags <- parseTags <$> readFile f
+    highlightLojbanBlocks tags $ toS ib)
 
 -- Wie `lojbanCompiler`, aber mit Pandoc.
-lojbanPandocCompiler :: Compiler (Item [Char])
-lojbanPandocCompiler = renderPandoc =<< lojbanCompiler
+lojbanPandocCompiler :: FilePath -> Compiler (Item [Char])
+lojbanPandocCompiler f = renderPandoc . (fmap toS) =<< lojbanCompiler f
