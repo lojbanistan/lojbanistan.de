@@ -8,11 +8,12 @@ import Data.Char (isSpace)
 import qualified Data.Text as T
 import qualified Data.Set as S
 import Text.HTML.TagSoup
+import Control.Monad.Writer hiding ((<>))
 
-lookupTranslation :: [Tag Text] -> Text -> (S.Set Text, Text)
+lookupTranslation :: [Tag Text] -> Text -> Writer (S.Set Text) Text
 lookupTranslation tags x = case findDefinition x tags of
-    Just res -> (S.empty, res)
-    Nothing  -> (S.singleton x, "Keine Definition gefunden")
+    Just res -> return res
+    Nothing  -> writer ("Keine Definition gefunden", S.singleton x)
   where
     findDefinition :: Text -> [Tag Text] -> Maybe Text
     findDefinition w (TagOpen "valsi" attrs : xs)
@@ -27,31 +28,35 @@ lookupTranslation tags x = case findDefinition x tags of
     findDefinition' w (_ : xs) = findDefinition' w xs
     findDefinition' _ [] = Nothing
 
-highlightWord :: [Tag Text] -> Text -> (S.Set Text, Text)
+highlightWord :: [Tag Text] -> Text -> Writer (S.Set Text) Text
 highlightWord tags w
-    | T.all isSpace w = (S.empty, w)
+    | T.all isSpace w = return w
     | otherwise = highlight w
         where highlight v = (\x -> "<span>" <> v <> "<span class=\"translation\">" <> x <> "</span></span>")
                                 <$> lookupTranslation tags v
 
 highlightLojbanBlocks :: [Tag Text] -> Text -> IO Text
 highlightLojbanBlocks tags s = do
-    let (set, result) = T.concat <$> parse (asStr tokenize s)
+    let (result, set) = runWriter (T.concat <$> lojbanize (asStr tokenize s))
     traverse_ putStrLn $ (\x -> "[Warnung] Keine Definition für " <> x <> " gefunden") <$> S.elems set
     return result
   where
     asStr :: ([Char] -> [[Char]]) -> Text -> [Text]
     asStr f a = toS <$> f (toS a)
 
-    parse :: [Text] -> (S.Set Text, [Text])
-    parse (x : xs) | x `elem` [ "{jbo}", "{lojban}" ] = highlight xs
-                   | otherwise = (x :) <$> parse xs
-    parse [] = return []
+    lojbanize :: [Text] -> Writer (S.Set Text) [Text]
+    lojbanize = transformBrackets [("{lojban}","{/lojban}"), ("{jbo}", "{/jbo}")] (highlightWord tags)
 
-    highlight :: [Text] -> (S.Set Text, [Text])
-    highlight (x : xs) | x `elem` [ "{/jbo}", "{/lojban}" ] = parse xs
-                       | otherwise = let (y,z) = highlight xs in bimap (S.union y) (: z) (highlightWord tags x)
-    highlight [] = return []
+    transformBrackets :: Monad m => [(Text,Text)] -> (Text -> m Text) -> [Text] -> m [Text]
+    transformBrackets ((s,e):xs) f ys = transformBrackets xs f =<< sequence (transformBracket s e return f ys)
+    transformBrackets [] _ xs = return xs
+
+    transformBracket :: Text -> Text -> (Text -> b) -> (Text -> b) -> [Text] -> [b]
+    transformBracket start end id' f xs = transformBracket' xs False
+      where transformBracket' (x:xs) b | x == start || x == end = transformBracket' xs (not b)
+                                       | b = f x : transformBracket' xs b
+                                       | otherwise = id' x : transformBracket' xs b
+            transformBracket' [] _ = []
 
     -- keine schöne Lösung, hm
     tokenize :: [Char] -> [[Char]]
@@ -81,4 +86,4 @@ lojbanCompiler f = do
 -- Wie `lojbanCompiler`, aber mit Pandoc. Der lojbanPandocCompiler sollte immer
 -- bevorzugt werden, da jbovlaste im export LaTeX benutzt für die $x_n$ place structures.
 lojbanPandocCompiler :: FilePath -> Compiler (Item [Char])
-lojbanPandocCompiler f = renderPandoc . (fmap toS) =<< lojbanCompiler f
+lojbanPandocCompiler f = renderPandoc . map toS =<< lojbanCompiler f
