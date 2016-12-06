@@ -54,3 +54,8 @@ span {
   display: inline-block;
   position: relative;
 }
+
+span.solution {
+  color: black;
+  background-color: black;
+}

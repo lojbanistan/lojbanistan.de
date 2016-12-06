@@ -1,7 +1,8 @@
 {-# LANGUAGE OverloadedStrings, NoImplicitPrelude,
-    ViewPatterns, FlexibleContexts, ScopedTypeVariables #-}
+    FlexibleContexts, ScopedTypeVariables #-}
 module LojbanHighlighting where
 
+import Prelude (String)
 import Protolude
 import Hakyll
 import Data.Char (isSpace)
@@ -41,25 +42,34 @@ highlightLojbanBlocks tags s = do
     traverse_ putStrLn $ (\x -> "[Warnung] Keine Definition für " <> x <> " gefunden") <$> S.elems set
     return result
   where
-    asStr :: ([Char] -> [[Char]]) -> Text -> [Text]
+    asStr :: (String -> [String]) -> Text -> [Text]
     asStr f a = toS <$> f (toS a)
 
     lojbanize :: [Text] -> Writer (S.Set Text) [Text]
-    lojbanize = transformBrackets [("{lojban}","{/lojban}"), ("{jbo}", "{/jbo}")] (highlightWord tags)
+    lojbanize xs = transformBracket "{solution}" "{/solution}" ["<span class=\"solution\">"] ["</span>"] identity identity
+               <$> transformBrackets [("{lojban}","{/lojban}"), ("{jbo}", "{/jbo}")] (highlightWord tags) xs
 
     transformBrackets :: Monad m => [(Text,Text)] -> (Text -> m Text) -> [Text] -> m [Text]
-    transformBrackets ((s,e):xs) f ys = transformBrackets xs f =<< sequence (transformBracket s e return f ys)
+    transformBrackets ((st,e):xs) f ys = transformBrackets xs f =<< sequence (transformBracket st e [] [] return f ys)
     transformBrackets [] _ xs = return xs
 
-    transformBracket :: Text -> Text -> (Text -> b) -> (Text -> b) -> [Text] -> [b]
-    transformBracket start end id' f xs = transformBracket' xs False
-      where transformBracket' (x:xs) b | x == start || x == end = transformBracket' xs (not b)
+    transformBracket :: Text -- Anfangstext mit dem die Transformation beginnt
+                     -> Text -- Endtext mit dem die Transformation endet
+                     -> [b]  -- Transformation für den Starttext (meist [])
+                     -> [b]  -- Transformation für den Endtext (meist [])
+                     -> (Text -> b) -- Transformation für Text der nicht innerhalb der Klammern steht (meist id)
+                     -> (Text -> b) -- Transformation für Text der innerhalb der Klammern steht
+                     -> [Text] -- Der Text als token liste
+                     -> [b] -- Das Resultat der Transformation
+    transformBracket start end fs fe id' f xs' = transformBracket' xs' False
+      where transformBracket' (x:xs) b | x == start && not b = fs <> transformBracket' xs (not b)
+                                       | x == end && b = fe <> transformBracket' xs (not b)
                                        | b = f x : transformBracket' xs b
                                        | otherwise = id' x : transformBracket' xs b
             transformBracket' [] _ = []
 
     -- keine schöne Lösung, hm
-    tokenize :: [Char] -> [[Char]]
+    tokenize :: String -> [String]
     tokenize str = let token = ['\n','<','>','\r',' ','\t', '.', ','] in
       case str of
         [] -> []
@@ -77,7 +87,7 @@ highlightLojbanBlocks tags s = do
 lojbanCompiler :: FilePath
                -- ^ Dateiname der Jbovlaste XML
                -> Compiler (Item Text)
-lojbanCompiler f = do
+lojbanCompiler f =
   getResourceBody >>= withItemBody (\ib -> unsafeCompiler $ do
     -- unsafeCompiler ok? Vllt. etwas netteres?
     tags <- parseTags <$> readFile f
@@ -85,5 +95,5 @@ lojbanCompiler f = do
 
 -- Wie `lojbanCompiler`, aber mit Pandoc. Der lojbanPandocCompiler sollte immer
 -- bevorzugt werden, da jbovlaste im export LaTeX benutzt für die $x_n$ place structures.
-lojbanPandocCompiler :: FilePath -> Compiler (Item [Char])
+lojbanPandocCompiler :: FilePath -> Compiler (Item String)
 lojbanPandocCompiler f = renderPandoc . map toS =<< lojbanCompiler f
