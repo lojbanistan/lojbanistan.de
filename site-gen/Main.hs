@@ -27,8 +27,11 @@ main = hakyll $ do
   -- Das Layout ist /artikel/<id>.html
   match "artikel/*" $ do
     route $ setExtension "html"
-    let ctx = articleDependenciesContext <> defaultContext
+    let ctx = listField "artikel" defaultContext (loadAllSnapshots "artikel/*" "content")
+            <> articleDependenciesContext
+            <> defaultContext
     compile $ lojbanPandocCompiler "jbovlaste.xml"
+          >>= saveSnapshot "content"
           >>= loadAndApplyTemplate (fromFilePath "templates/default.html") ctx
           >>= relativizeUrls
 
