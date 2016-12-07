@@ -5,13 +5,14 @@
 
 # autoren & beteiligte
 [@Profpatsch](http://profpatsch.de)  
-@uwap
+[@uwap](https://github.com/uwap)
 
 
 # tech
 
 Basiert auf [Html5Boilerplate](https://html5boilerplate.com/).
 Nutzt [Hakyll](https://jaspervdj.be/hakyll/).
+Greift auf die Daten von [jbovlaste](http://jbovlaste.lojban.org/) zurück.
 
 # dev
 
