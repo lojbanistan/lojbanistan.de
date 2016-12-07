@@ -36,14 +36,12 @@ main = hakyll $ do
           >>= relativizeUrls
 
   -- Liste an Artikeln
-  match "templates/index.html" $ do
+  match "index.md" $ do
     route $ constRoute "index.html"
-    compile $ do
-      let ctx = listField "artikel" defaultContext (loadAll "artikel/*") <> defaultContext 
-      getResourceString
-        >>= applyAsTemplate ctx
-        >>= loadAndApplyTemplate (fromFilePath "templates/default.html") ctx
-        >>= relativizeUrls
+    let ctx = listField "artikel" defaultContext (loadAll "artikel/*") <> defaultContext
+    compile $ pandocCompiler
+          >>= loadAndApplyTemplate (fromFilePath "templates/default.html") ctx
+          >>= relativizeUrls
 
   match "templates/*" $
     compile templateCompiler
