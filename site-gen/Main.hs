@@ -5,6 +5,7 @@ module Main where
 import Data.Monoid ((<>))
 import Protolude hiding ((<>))
 import qualified System.FilePath.Posix as FP
+import qualified Control.Monad as UnsafeMonad
 
 import Hakyll
 import LojbanHighlighting
@@ -57,5 +58,5 @@ articleDependenciesContext = listField "aufbauendAuf" defaultContext $ do
   identifier <- getUnderlying
   metadata <- getMetadata identifier
   case lookupStringList "aufbauendAuf" metadata of
-    Nothing -> return []
     Just xs -> traverse load $ map (\x -> fromFilePath ("artikel/" ++ x ++ ".md")) xs
+    _ -> UnsafeMonad.fail "Dieser Artikel baut auf keinen Artikeln auf"
