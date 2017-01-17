@@ -58,4 +58,8 @@ span {
 span.solution {
   color: black;
   background-color: black;
+  width: 100%;
+}
+span.solution:hover {
+  background-color: inherit;
 }
