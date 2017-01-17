@@ -47,7 +47,7 @@ highlightLojbanBlocks tags s = do
 
     lojbanize :: [Text] -> Writer (S.Set Text) [Text]
     lojbanize xs = transformBracket "{solution}" "{/solution}" ["<span class=\"solution\">"] ["</span>"] identity identity
-               <$> transformBrackets [("{lojban}","{/lojban}"), ("{jbo}", "{/jbo}")] (highlightWord tags) xs
+               <$> transformBrackets [("{lojban}","{/lojban}"), ("{jbo}", "{/jbo}"), ("\\lojb{","}")] (highlightWord tags) xs
 
     transformBrackets :: Monad m => [(Text,Text)] -> (Text -> m Text) -> [Text] -> m [Text]
     transformBrackets ((st,e):xs) f ys = transformBrackets xs f =<< sequence (transformBracket st e [] [] return f ys)
