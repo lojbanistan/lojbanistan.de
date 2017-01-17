@@ -24,8 +24,17 @@
       <![endif]-->
     <div class="wrapper">
 
+      <nav>
+        <a href="/">Artikel</a>
+        <ul>
+          $for(artikel)$
+          <li><a href="$url$">$titel$</a></li>
+          $endfor$
+        </ul>
+      </nav>
+
       <header>
-        <h1>Deutsch ⇔ Lojban ⇔ Deutsch </h1>
+        <h1>$titel$</h1>
       </header>
 
       <main>
@@ -34,7 +43,7 @@
           Dieser Artikel baut auf folgenden Artikeln auf:
           <ul>
           $for(aufbauendAuf)$
-            <li><a href="$url$">$title$</a></li>
+            <li><a href="$url$">$titel$</a></li>
           $endfor$
           </ul>
         </p>

@@ -69,3 +69,30 @@ body > footer a:hover {
     background-color: #9F5B25;
 }
 
+/* Navigation Oben */
+nav {
+  position: relative;
+  background: #CF8B54;
+}
+
+nav ul {
+  display: none;
+  position: absolute;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  border-bottom: 1px solid #9F5B25;
+}
+
+nav:hover ul {
+  display: block;
+  position: absolute;
+}
+
+nav li {
+  list-style: none;
+  background: #CF8B54;
+  padding: 2px;
+  border: 1px solid #9F5B25;
+  border-bottom: 0;
+}

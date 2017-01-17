@@ -28,7 +28,7 @@ let
   hp = haskellPackages.override {
     overrides = self: super: {
       # hakyll site generator
-      lojbanistan-sitegen = super.callPackage "${nixfile}" {};
+      lojbanistan-sitegen = self.callPackage nixfile {};
     };
   };
   bin = "${hp.lojbanistan-sitegen}/bin/lojbanistan-de";
@@ -38,12 +38,17 @@ stdenv.mkDerivation {
   name = "lojbanistan.de-${version}";
 
   inherit src;
+  # Wir müssen die Locale vom site-generator übernehmen, damit
+  # Dateien für den Seitengenerator richtig eingelesen werden (utf-8).
+  inherit (hp.lojbanistan-sitegen) LOCALE_ARCHIVE LANG;
 
   buildPhase = ''
-    # only english for now
-    cp ${jbovlaste}/en.xml ./jbovlaste.xml
+    # erstmal nur Deutsch
+    cp ${jbovlaste}/de.xml ./jbovlaste.xml
+
     ${bin} build
   '';
+
   installPhase = ''
     mkdir $out
     echo cp -r ./_site/* $out
